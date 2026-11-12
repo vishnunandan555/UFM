@@ -1,7 +1,7 @@
 # UFM Project Progress & State Tracker
 
 > **Single Source of Truth for Agents & Developers**  
-> Last updated: 2026-11-12 (Project kickoff)
+> Last updated: 2026-11-12 (Phase 4 Milestone 1 complete)
 
 ---
 
@@ -13,111 +13,28 @@
 | **Phase 1** | Financial Foundation (Drift DB, Schema, Ledger, Transfers) | ✅ Completed | 100% |
 | **Phase 2** | Core UI (Accounts, Income/Expense, Transfer, History) | ✅ Completed | 100% |
 | **Phase 3** | Scanner & UPI URI Parser (Fixtures, QR review screen) | ✅ Completed | 100% |
-| **Phase 4** | App Discovery, Intent Launch & Fake UPI Test App | ⏳ Next | 0% |
-| **Phase 5** | Payment Lifecycle (Yes/No Dialog, State Recovery, Ledger linkage) | ⚪ Not Started | 0% |
+| **Phase 4** | App Discovery, Intent Launch & Fake UPI Test App | ✅ Completed | 100% |
+| **Phase 5** | Payment Lifecycle (Yes/No Dialog, State Recovery, Ledger linkage) | ⏳ Next | 0% |
 | **Phase 6** | Summaries, Polish, Backup/Restore, Real-device verification | ⚪ Not Started | 0% |
 
 ---
 
-## 🎯 Current Focus: Phase 4 — App Discovery, Intent Launch & Fake UPI Test App
+## 🎯 Current Focus: Phase 5 — Payment Lifecycle (Pre-launch, Confirmation, Recovery & Ledger Linkage)
 
-### Phase 3 Checklist (Complete)
-- [x] Implement pure Dart UPI URI parser (`lib/features/upi/parser/upi_uri_parser.dart`)
-- [x] Parse standard UPI query parameters (`pa`, `pn`, `am`, `cu`, `tn`, `tr`, `mc`)
-- [x] Create test fixtures for valid, invalid, percent-encoded, and edge-case UPI payloads
-- [x] Build QR review screen (`lib/features/upi/presentation/qr_review_screen.dart`) with payee details inspection and category/account selector
-- [x] Build camera QR scanner screen (`lib/features/upi/presentation/scan_screen.dart`) using `mobile_scanner` with manual paste/emulator support
-- [x] Declare Android camera permission (`android.permission.CAMERA`) in `AndroidManifest.xml`
-- [x] Run static analysis (0 errors, 0 warnings) and all 59 unit/widget/integration tests pass
+### Phase 4 Checklist (Complete)
 
-### Phase 4 Checklist (Next)
-- [ ] Build standalone `fake_upi_app` Android companion app for deterministic emulator testing
-- [ ] Implement Kotlin Android platform channel (`UpiIntegration.kt`) for UPI app queries and targeted intent launches
-- [ ] Configure minimum `<queries>` declaration in `AndroidManifest.xml` without `QUERY_ALL_PACKAGES`
-- [ ] Implement internal UPI App Selector UI with preferred-app option
-- [ ] Create MethodChannel Dart bridge (`lib/features/upi/platform/upi_platform.dart`)
-
----
-
-## 📝 Key Architecture Decisions Log (ADR)
-* **ADR-001 (Money Representation):** All financial values are strictly stored as integer paise (`int`). Example: ₹50.25 is `5025`. No floating-point math allowed for balances.
-* **ADR-002 (Payment Confirmation):** Payments initiated via external UPI apps must have an explicit Yes/No user confirmation step upon returning to UFM. No implicit success inference.
-* **ADR-003 (Agent Discovery):** `AGENTS.md` and `PROGRESS.md` are kept in the repository root for automatic discovery across chat sessions.
-* **ADR-004 (Drift SQLite Foreign Keys & Relational Schema):** Foreign key enforcement is activated via `PRAGMA foreign_keys = ON;` in both connection setup and `beforeOpen`. Schema-level unique constraints and check constraints (`amountPaise > 0`, `source <> dest`) enforce financial integrity at the database layer.
-* **ADR-005 (Material 3 Core UI & Unified History):** Navigation uses a 5-tab M3 navigation bar. Dashboard provides live confirmed balances and quick entry dialogs. History unifies confirmed transactions, transfers, and unverified payment attempts with in-place resolution.
-* **ADR-006 (Strict UPI URI Validation & Payee Inspection):** QR payloads are parsed with `Uri.parse` and validated against VPA format, INR currency, and positive paise. Fixed amounts are displayed locked; variable amounts require user entry.
-
----
-
-## 🔜 Immediate Next Action
-Phase 4: Build the standalone `fake_upi_app` companion Android project and implement the Kotlin package query bridge.
-
-### Phase 2 Checklist (Complete)
-- [x] Build Dashboard Screen with confirmed total balance card, accounts summary, quick actions, and unverified alerts banner
-- [x] Build Accounts Screen with active account cards, balances, and archive actions
-- [x] Build Add Account Dialog with name, type (Bank/Cash/Other), and opening balance validation
-- [x] Build Add Transaction Dialog for manual Expense/Income recording with account and category selectors
-- [x] Build Transfer Dialog with source/destination account selectors and distinct-account validation
-- [x] Build Unified History Screen with search, type filters (Expenses, Income, Transfers, Unverified), and in-place unverified attempt resolution
-- [x] Write widget tests for all forms and screens (49 total tests passing)
-- [x] Verify `flutter analyze` (0 errors, 0 warnings)
-
-### Phase 3 Checklist (Next)
-- [ ] Implement pure Dart UPI URI parser (`lib/features/upi/parser/upi_uri_parser.dart`)
-- [ ] Parse standard UPI query parameters (`pa`, `pn`, `am`, `cu`, `tn`, `tr`, `mc`)
-- [ ] Create test fixtures for valid, invalid, percent-encoded, and edge-case UPI payloads
-- [ ] Build QR review screen (`lib/features/upi/presentation/qr_review_screen.dart`) with payee details inspection and category/account selector
-- [ ] Build camera QR scanner screen (`lib/features/upi/presentation/scan_screen.dart`) using `mobile_scanner`
-
----
-
-## 📝 Key Architecture Decisions Log (ADR)
-* **ADR-001 (Money Representation):** All financial values are strictly stored as integer paise (`int`). Example: ₹50.25 is `5025`. No floating-point math allowed for balances.
-* **ADR-002 (Payment Confirmation):** Payments initiated via external UPI apps must have an explicit Yes/No user confirmation step upon returning to UFM. No implicit success inference.
-* **ADR-003 (Agent Discovery):** `AGENTS.md` and `PROGRESS.md` are kept in the repository root for automatic discovery across chat sessions.
-* **ADR-004 (Drift SQLite Foreign Keys & Relational Schema):** Foreign key enforcement is activated via `PRAGMA foreign_keys = ON;` in both connection setup and `beforeOpen`. Schema-level unique constraints and check constraints (`amountPaise > 0`, `source <> dest`) enforce financial integrity at the database layer.
-* **ADR-005 (Material 3 Core UI & Unified History):** Navigation uses a 5-tab M3 navigation bar. Dashboard provides live confirmed balances and quick entry dialogs. History unifies confirmed transactions, transfers, and unverified payment attempts with in-place resolution.
-
----
-
-## 🔜 Immediate Next Action
-Phase 3: Implement pure Dart UPI URI parser and test fixtures in `lib/features/upi/parser/`.
-
-### Phase 0 Checklist (Complete)
-
-- [x] Create `AGENTS.md` to guide any new agent or conversation
-- [x] Create `PROGRESS.md` live tracking document
-- [x] Initialize Flutter project (`flutter create --org com.ufm.tracker --project-name ufm --platforms android .`)
-- [x] Configure `pubspec.yaml` with verified production dependencies:
-  - `flutter_riverpod` (state management)
-  - `drift`, `sqlite3_flutter_libs`, `path_provider`, `path` (local SQLite database)
-  - `go_router` (declarative routing)
-  - `intl` (dates & currency formatting)
-  - `mobile_scanner` (QR scanning)
-  - `fl_chart` (charts)
-  - Dev dependencies: `build_runner`, `drift_dev`, `flutter_lints`
-- [x] Set up directory structure according to Section 7 of `PROJECT_PLAN.md`
-- [x] Configure Material 3 Theme tokens (`lib/app/theme/`) with light and dark mode
-- [x] Create base navigation shell with 5 primary destinations (`lib/app/router.dart`):
-  1. Home (Dashboard)
-  2. Accounts
-  3. Scan (UPI QR)
-  4. History
-  5. Insights
-- [x] Run `flutter analyze` and `flutter test` (0 errors, 0 warnings)
-
-### Phase 1 Checklist (Complete)
-
-- [x] Implement Drift database connection (`lib/core/database/app_database.dart`)
-- [x] Define Drift tables (`accounts`, `categories`, `transactions`, `transfers`, `payment_attempts`)
-- [x] Run code generation (`dart run build_runner build`)
-- [x] Implement ledger balance calculation engine (`lib/data/services/ledger_service_impl.dart`)
-- [x] Implement atomic transfer execution service (`lib/data/services/atomic_transfer_service_impl.dart`)
-- [x] Write unit & SQLite in-memory integration tests for financial invariants:
-  - Balance invariance across transfers
-  - Account balance = openingBalance + confirmedIncome - confirmedExpense + transfersIn - transfersOut
-  - Unique payment attempt linkage
-  - Foreign key and positive paise check constraints
+- [x] Build standalone `fake_upi_app` Android companion app (`com.ufm.fakeupi`) for deterministic emulator testing
+- [x] Configure AGP 9.1.0, Kotlin 2.4.0, Gradle 9.3.1 build scripts in `fake_upi_app/` and verify `./gradlew assembleDebug`
+- [x] Implement NPCI `upi://pay` deep-link filter, parameters inspection, and 4 simulation buttons (Success, Failure, Cancel, Kill/Crash) in `FakeUpiApp`
+- [x] Configure minimal `<queries>` in UFM's `AndroidManifest.xml` with generic `upi://pay` intent and 9 whitelisted packages (no `QUERY_ALL_PACKAGES`)
+- [x] Implement Kotlin Android platform channel bridge (`UpiIntegration.kt` & `MainActivity.kt`) for `com.ufm.tracker.ufm/upi`
+- [x] Implement Dart platform bridge (`UpiPlatform`, `InstalledUpiApp`, `UpiLaunchResult`, `MethodChannelUpiPlatform`, and Riverpod `upiPlatformProvider`)
+- [x] Implement pure Dart NPCI URI builder utility (`UpiUriBuilder`) using strict integer paise arithmetic
+- [x] Implement preferred UPI app persistence (`PreferredUpiAppService` with file and in-memory test implementations)
+- [x] Implement Material 3 App Selector bottom sheet (`AppSelectorSheet`) with >= 48dp touch targets, test app badge, preferred app indicator, and empty state
+- [x] Wire up `QrReviewScreen` with app discovery, selector sheet, pre-launch persistence, and targeted intent launch
+- [x] Add comprehensive unit and widget tests (96/96 passing tests, 0 analyzer issues, adversarial challenger hardening complete)
+- [x] Verify compilation of Android host app debug APK (`flutter build apk --debug`) and companion app debug APK (`./gradlew assembleDebug`)
 
 ---
 
@@ -127,9 +44,12 @@ Phase 3: Implement pure Dart UPI URI parser and test fixtures in `lib/features/u
 - **ADR-002 (Payment Confirmation):** Payments initiated via external UPI apps must have an explicit Yes/No user confirmation step upon returning to UFM. No implicit success inference.
 - **ADR-003 (Agent Discovery):** `AGENTS.md` and `PROGRESS.md` are kept in the repository root for automatic discovery across chat sessions.
 - **ADR-004 (Drift SQLite Foreign Keys & Relational Schema):** Foreign key enforcement is activated via `PRAGMA foreign_keys = ON;` in both connection setup and `beforeOpen`. Schema-level unique constraints and check constraints (`amountPaise > 0`, `source <> dest`) enforce financial integrity at the database layer.
+- **ADR-005 (Material 3 Core UI & Unified History):** Navigation uses a 5-tab M3 navigation bar. Dashboard provides live confirmed balances and quick entry dialogs. History unifies confirmed transactions, transfers, and unverified payment attempts with in-place resolution.
+- **ADR-006 (Strict UPI URI Validation & Payee Inspection):** QR payloads are parsed with `Uri.parse` and validated against VPA format, INR currency, and positive paise. Fixed amounts are displayed locked; variable amounts require user entry.
+- **ADR-007 (Targeted UPI Intent Resolution & Package Whitelisting):** Device UPI applications are discovered and launched via a native Kotlin MethodChannel (`com.ufm.tracker.ufm/upi`) using fine-grained Android `<queries>` declarations without `QUERY_ALL_PACKAGES`. Target apps are matched against NPCI standards and whitelisted package IDs. Pre-launch attempts are strictly persisted in Drift SQLite before intent activation.
 
 ---
 
 ## 🔜 Immediate Next Action
 
-Phase 2: Core UI (Accounts list & detail, manual expense/income forms, transfer form, and transaction history views).
+Phase 5: Payment Lifecycle — Pre-launch attempt persistence, explicit post-launch Yes/No confirmation dialog, 1-to-1 ledger linkage to confirmed expense transactions, app resume/process death recovery of unverified attempts, and funding account correction flow.

@@ -8,7 +8,11 @@ import '../../../core/database/tables/categories_table.dart';
 import '../../../core/database/tables/payment_attempts_table.dart';
 import '../../../core/utilities/money_formatter.dart';
 import '../../dashboard/providers/dashboard_providers.dart';
+import '../app_selector/app_selector_sheet.dart';
+import '../app_selector/preferred_upi_app_service.dart';
 import '../domain/upi_payment_draft.dart';
+import '../parser/upi_uri_builder.dart';
+import '../platform/upi_platform_provider.dart';
 
 class QrReviewScreen extends ConsumerStatefulWidget {
   const QrReviewScreen({
@@ -49,6 +53,15 @@ class _QrReviewScreenState extends ConsumerState<QrReviewScreen> {
     super.dispose();
   }
 
+  void _navigateToHistory() {
+    if (!mounted) return;
+    try {
+      context.go('/history');
+    } catch (_) {
+      // Allows standalone widget tests without GoRouter context
+    }
+  }
+
   Future<void> _onProceed() async {
     if (!_formKey.currentState!.validate()) return;
     if (_selectedAccountId == null) {
@@ -63,10 +76,13 @@ class _QrReviewScreenState extends ConsumerState<QrReviewScreen> {
         : MoneyFormatter.parseRupeesToPaise(_amountController.text.trim())!;
 
     setState(() => _isSaving = true);
+    final db = ref.read(databaseProvider);
     final paymentAttemptsDao = ref.read(paymentAttemptsDaoProvider);
+    final upiPlatform = ref.read(upiPlatformProvider);
+    final preferredAppService = ref.read(preferredUpiAppServiceProvider);
 
     try {
-      // Persist attempt as pending BEFORE any external launch
+      // 1. Pre-launch persistence: Persist attempt as pending BEFORE any external launch
       final attemptId = await paymentAttemptsDao.insertAttempt(
         PaymentAttemptsCompanion.insert(
           status: PaymentAttemptStatus.pending,
@@ -85,16 +101,104 @@ class _QrReviewScreenState extends ConsumerState<QrReviewScreen> {
         ),
       );
 
-      if (mounted) {
-        // In Phase 3, confirm draft persistence
+      // 2. Query available apps and preferred app
+      final apps = await upiPlatform.getCompatibleApps();
+      final preferredPackage = await preferredAppService.getPreferredPackage();
+
+      if (mounted) setState(() => _isSaving = false);
+
+      if (!mounted) return;
+
+      // 3. Show App Selector Sheet
+      final selection = await AppSelectorSheet.show(
+        context: context,
+        apps: apps,
+        amountPaise: amountPaise,
+        payeeName: widget.draft.payeeName,
+        preferredPackageName: preferredPackage,
+      );
+
+      if (selection == null) {
+        // User dismissed sheet or no apps installed
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Payment attempt (#$attemptId) saved as pending.',
+              ),
+            ),
+          );
+          _navigateToHistory();
+        }
+        return;
+      }
+
+      // 4. Update preference if requested
+      if (selection.rememberAsPreferred) {
+        await preferredAppService.setPreferredPackage(selection.app.packageName);
+      }
+
+      // 5. Build payment URI
+      final finalUri = UpiUriBuilder.build(
+        payeeVpa: widget.draft.payeeVpa,
+        payeeName: widget.draft.payeeName,
+        amountPaise: amountPaise,
+        currency: widget.draft.currency,
+        note: _noteController.text.trim().isEmpty
+            ? null
+            : _noteController.text.trim(),
+        transactionRef: widget.draft.transactionRef,
+        merchantCategoryCode: widget.draft.merchantCategoryCode,
+      );
+
+      // 6. Record selected app and launch timestamp in database
+      await (db.update(db.paymentAttempts)
+            ..where((t) => t.id.equals(attemptId)))
+          .write(
+        PaymentAttemptsCompanion(
+          selectedPaymentAppId: drift.Value(selection.app.packageName),
+          launchedAt: drift.Value(DateTime.now()),
+        ),
+      );
+
+      // 7. Launch external intent
+      final launchResult = await upiPlatform.launchPayment(
+        packageName: selection.app.packageName,
+        paymentUri: finalUri,
+      );
+
+      if (!mounted) return;
+
+      if (launchResult.isSuccessful) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              'Payment draft created (#$attemptId). App launcher active in Phase 4.',
+            content: Text('Payment launched in ${selection.app.appName}'),
+          ),
+        );
+        _navigateToHistory();
+      } else {
+        // Record launch error in database
+        await (db.update(db.paymentAttempts)
+              ..where((t) => t.id.equals(attemptId)))
+            .write(
+          PaymentAttemptsCompanion(
+            launchError: drift.Value(
+              launchResult.errorMessage ?? 'Launch failed',
             ),
           ),
         );
-        context.go('/history');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                launchResult.errorMessage ??
+                    'Failed to launch ${selection.app.appName}',
+              ),
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+          );
+          _navigateToHistory();
+        }
       }
     } catch (e) {
       if (mounted) {
