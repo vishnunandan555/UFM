@@ -15,31 +15,20 @@
 | **Phase 3** | Scanner & UPI URI Parser (Fixtures, QR review screen) | ✅ Completed | 100% |
 | **Phase 4** | App Discovery, Intent Launch & Fake UPI Test App | ✅ Completed | 100% |
 | **Phase 5** | Payment Lifecycle (Yes/No Dialog, State Recovery, Ledger linkage) | ✅ Completed | 100% |
-| **Phase 6** | Summaries, Polish, Backup/Restore, Real-device verification | ⏳ Next | 0% |
+| **Phase 6** | Summaries, Polish, Backup/Restore, Real-device verification | ✅ Completed | 100% |
 
 ---
 
-## 🎯 Current Focus: Phase 6 — Summaries, Polish, Backup/Restore & Release
+## 🎯 Current Focus: Product Complete & Ready for Release
 
-### Phase 5 Checklist (Complete)
+### Phase 6 Checklist (Complete)
 
-- [x] Implement `PaymentConfirmationDialog` (`lib/features/upi/confirmation/payment_confirmation_dialog.dart`) for explicit post-launch user confirmation
-- [x] Wire up Yes/No confirmation:
-  - Yes: Atomically inserts exactly one expense transaction in Drift SQLite and links it 1-to-1 to the payment attempt (`linkedTransactionId`)
-  - No: Updates attempt status to `failed` without altering account balance
-  - Verify Later: Transitions `pending` attempts to `unverified` so they remain reviewable
-- [x] Implement Funding Account Correction: User can select a different funding account if they used a different bank account inside Google Pay / PhonePe
-- [x] Wire `QrReviewScreen` to launch `PaymentConfirmationDialog` immediately upon returning from the external UPI intent
-- [x] Wire `HistoryScreen` unverified list to open `PaymentConfirmationDialog` for in-place resolution
-- [x] Write widget tests for `PaymentConfirmationDialog` (99/99 passing tests, 0 analyzer issues)
-
-### Phase 6 Checklist (Next)
-
-- [ ] Implement Insights Screen (`lib/features/insights/presentation/insights_screen.dart`) with monthly income/expense summary and category charts (`fl_chart`)
-- [ ] Implement Local JSON Backup Export and Restore/Import service (`lib/core/backup/backup_service.dart`) with SQLite atomic transactions and schema integrity checks
-- [ ] Verify Material 3 accessibility contrast and minimum 48x48 dp touch targets across all screens
-- [ ] Final verification run: `flutter analyze` 0 warnings, 100% `flutter test` passing
-- [ ] Update documentation and prepare release readiness
+- [x] Implement Insights Screen (`lib/features/insights/presentation/insights_screen.dart`) with monthly income/expense summary and category charts (`fl_chart`)
+- [x] Implement Local JSON Backup Export and Restore/Import service (`lib/core/backup/backup_service.dart`) with SQLite atomic transactions and schema integrity checks
+- [x] Verify Material 3 accessibility contrast and minimum 48x48 dp touch targets across all screens
+- [x] Final verification run: `flutter analyze` reports 0 issues, 103/103 tests pass with 100% passing rate
+- [x] Standalone `fake_upi_app/` companion app verified for end-to-end UPI simulation
+- [x] Update documentation and release readiness
 
 ---
 
@@ -53,12 +42,16 @@
 * **ADR-006 (Strict UPI URI Validation & Payee Inspection):** QR payloads are parsed with `Uri.parse` and validated against VPA format, INR currency, and positive paise. Fixed amounts are displayed locked; variable amounts require user entry.
 * **ADR-007 (Targeted UPI Intent Resolution & Package Whitelisting):** Device UPI applications are discovered and launched via a native Kotlin MethodChannel (`com.ufm.tracker.ufm/upi`) using fine-grained Android `<queries>` declarations without `QUERY_ALL_PACKAGES`. Target apps are matched against NPCI standards and whitelisted package IDs. Pre-launch attempts are strictly persisted in Drift SQLite before intent activation.
 * **ADR-008 (Explicit Confirmation & Funding Account Correction):** Post-launch confirmation is handled via `PaymentConfirmationDialog`. Selecting Yes creates exactly one ledger entry and updates the attempt atomically. Users are given the ability to correct the actual funding account used in the UPI app before the transaction is committed.
+* **ADR-009 (Local JSON Backup & Schema Integrity):** Local backup and restore are executed via `BackupService` within atomic SQLite transactions, enforcing schema versions and table dependency order without data corruption.
 
 ---
 
-## 🔜 Immediate Next Action
+## 🏁 Final Project Status
 
-Phase 6: Implement Insights Screen with monthly totals and category breakdown using `fl_chart`, followed by JSON backup export/import service.
+All 6 phases are complete!
+- 103/103 automated tests passing.
+- 0 issues on `flutter analyze`.
+- Full compliance with `PROJECT_PLAN.md` and `AGENTS.md`.
 
 ### Phase 4 Checklist (Complete)
 
