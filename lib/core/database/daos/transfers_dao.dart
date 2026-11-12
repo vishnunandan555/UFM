@@ -14,6 +14,10 @@ class TransfersDao extends DatabaseAccessor<AppDatabase>
       (select(transfers)..orderBy([(t) => OrderingTerm.desc(t.occurredAt)]))
           .get();
 
+  Stream<List<Transfer>> watchAllTransfers() =>
+      (select(transfers)..orderBy([(t) => OrderingTerm.desc(t.occurredAt)]))
+          .watch();
+
   Future<List<Transfer>> getTransfersForAccount(int accountId) =>
       (select(transfers)
             ..where((t) =>

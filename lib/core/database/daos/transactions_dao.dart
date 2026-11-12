@@ -15,6 +15,10 @@ class TransactionsDao extends DatabaseAccessor<AppDatabase>
       (select(transactions)..orderBy([(t) => OrderingTerm.desc(t.occurredAt)]))
           .get();
 
+  Stream<List<Transaction>> watchAllTransactions() =>
+      (select(transactions)..orderBy([(t) => OrderingTerm.desc(t.occurredAt)]))
+          .watch();
+
   Future<List<Transaction>> getTransactionsForAccount(int accountId) =>
       (select(transactions)
             ..where((t) => t.accountId.equals(accountId))
