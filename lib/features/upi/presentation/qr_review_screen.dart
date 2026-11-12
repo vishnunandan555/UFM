@@ -10,6 +10,7 @@ import '../../../core/utilities/money_formatter.dart';
 import '../../dashboard/providers/dashboard_providers.dart';
 import '../app_selector/app_selector_sheet.dart';
 import '../app_selector/preferred_upi_app_service.dart';
+import '../confirmation/payment_confirmation_dialog.dart';
 import '../domain/upi_payment_draft.dart';
 import '../parser/upi_uri_builder.dart';
 import '../platform/upi_platform_provider.dart';
@@ -170,11 +171,13 @@ class _QrReviewScreenState extends ConsumerState<QrReviewScreen> {
       if (!mounted) return;
 
       if (launchResult.isSuccessful) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Payment launched in ${selection.app.appName}'),
-          ),
-        );
+        final savedAttempt = await paymentAttemptsDao.getAttemptById(attemptId);
+        if (mounted && savedAttempt != null) {
+          await PaymentConfirmationDialog.show(
+            context: context,
+            attempt: savedAttempt,
+          );
+        }
         _navigateToHistory();
       } else {
         // Record launch error in database

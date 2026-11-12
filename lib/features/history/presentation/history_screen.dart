@@ -1,14 +1,12 @@
-import 'package:drift/drift.dart' as drift;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../app/theme/app_theme.dart';
 import '../../../core/database/app_database.dart';
-import '../../../core/database/database_provider.dart';
-import '../../../core/database/tables/payment_attempts_table.dart';
 import '../../../core/database/tables/transactions_table.dart';
 import '../../../core/utilities/money_formatter.dart';
 import '../../dashboard/providers/dashboard_providers.dart';
+import '../../upi/confirmation/payment_confirmation_dialog.dart';
 
 enum HistoryFilter { all, expense, income, transfer, unverified }
 
@@ -58,73 +56,10 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
     super.dispose();
   }
 
-  void _resolveUnverifiedAttempt(PaymentAttempt attempt) {
-    final payeeText = attempt.payeeName.isNotEmpty ? attempt.payeeName : attempt.payeeVpa;
-
-    showDialog(
+  Future<void> _resolveUnverifiedAttempt(PaymentAttempt attempt) async {
+    await PaymentConfirmationDialog.show(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Review Payment Attempt'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Payee: $payeeText'),
-            const SizedBox(height: 8),
-            Text('Amount: ${MoneyFormatter.formatPaise(attempt.amountPaise)}'),
-            const SizedBox(height: 16),
-            const Text(
-              'Was this payment successful in your UPI app?',
-              style: TextStyle(fontWeight: FontWeight.w600),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          OutlinedButton(
-            onPressed: () async {
-              Navigator.pop(ctx);
-              await ref
-                  .read(paymentAttemptsDaoProvider)
-                  .updateAttemptStatus(attempt.id, PaymentAttemptStatus.failed);
-            },
-            child: const Text('No (Failed)'),
-          ),
-          FilledButton(
-            onPressed: () async {
-              Navigator.pop(ctx);
-              final db = ref.read(databaseProvider);
-              await db.transaction(() async {
-                final txId = await db.transactionsDao.insertTransaction(
-                  TransactionsCompanion.insert(
-                    accountId: attempt.actualFundingAccountId ??
-                        attempt.intendedAccountId,
-                    type: TransactionType.expense,
-                    amountPaise: attempt.amountPaise,
-                    categoryId: drift.Value(attempt.categoryId),
-                    merchant: drift.Value(attempt.payeeName),
-                    note: drift.Value(attempt.note),
-                    occurredAt: attempt.createdAt,
-                    source: TransactionSource.upiQr,
-                    paymentMethod: PaymentMethod.upi,
-                    paymentAttemptId: drift.Value(attempt.id),
-                  ),
-                );
-                await db.paymentAttemptsDao.linkTransaction(attempt.id, txId);
-                await db.paymentAttemptsDao.updateAttemptStatus(
-                  attempt.id,
-                  PaymentAttemptStatus.confirmed,
-                  resolvedAt: DateTime.now(),
-                );
-              });
-            },
-            child: const Text('Yes (Confirmed)'),
-          ),
-        ],
-      ),
+      attempt: attempt,
     );
   }
 
