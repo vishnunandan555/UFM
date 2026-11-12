@@ -58,3 +58,4 @@ class MoneyFormatter {
     return (rupeesPart * 100) + paisePart;
   }
 }
+

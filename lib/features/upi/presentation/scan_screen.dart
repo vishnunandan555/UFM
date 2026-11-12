@@ -15,3 +15,4 @@ class ScanScreen extends StatelessWidget {
     );
   }
 }
+
